@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <title>우리 반 복습 퀴즈</title>
+  <meta name="description" content="태블릿과 전자칠판에서 활용하는 참여형 우리 반 복습 퀴즈 단일 HTML 앱" />
+  <meta property="og:title" content="우리 반 복습 퀴즈" />
+  <meta property="og:description" content="태블릿과 전자칠판에서 활용하는 참여형 우리 반 복습 퀴즈 단일 HTML 앱" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <style>
+    /* CSS Reset & Variable Design System */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --bg-main: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #3b82f6;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --success-border: #22c55e;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --danger-border: #ef4444;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --border-default: #cbd5e1;
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.12);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --font-scale: 1;
+    }
+
+    /* Font Scale Mode (전자칠판 대형 글씨 모드) */
+    body.large-text {
+      --font-scale: 1.15;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", system-ui, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* 교실 분위기 밝은 격자 배경 */
+    body {
+      background-image: 
+        radial-gradient(#cbd5e1 1.2px, transparent 1.2px),
+        radial-gradient(#e2e8f0 1.2px, var(--bg-main) 1.2px);
+      background-size: 36px 36px;
+      background-position: 0 0, 18px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    /* Confetti Canvas */
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Page Container */
+    .app-container {
+      width: 100%;
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 50px;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 2px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 900;
+      font-size: calc(1rem * var(--font-scale));
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1.5px solid #bfdbfe;
+    }
+
+    .controls-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #f8fafc;
+      color: #334155;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: calc(0.9rem * var(--font-scale));
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .icon-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.96);
+    }
+
+    .icon-btn-edit {
+      background: #fefce8;
+      color: #854d0e;
+      border-color: #fde047;
+    }
+
+    .icon-btn-edit:hover {
+      background: #fef9c3;
+      border-color: #eab308;
+    }
+
+    /* Score & Status Bar */
+    .status-dashboard {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 12px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .progress-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: calc(1.05rem * var(--font-scale));
+      color: #334155;
+    }
+
+    .progress-chip {
+      background: #3b82f6;
+      color: #ffffff;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 900;
+    }
+
+    .score-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      color: #92400e;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: calc(1.15rem * var(--font-scale));
+      font-weight: 900;
+    }
+
+    .score-badge.glow {
+      animation: scorePulse 0.5s ease;
+    }
+
+    @keyframes scorePulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); background: #fde68a; }
+      100% { transform: scale(1); }
+    }
+
+    /* Main Quiz Card */
+    .quiz-card {
+      background: var(--bg-card);
+      border: 3px solid #cbd5e1;
+      border-radius: var(--radius-lg);
+      padding: 26px 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Question Header */
+    .question-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .question-badge {
+      flex-shrink: 0;
+      background: #2563eb;
+      color: #ffffff;
+      font-weight: 900;
+      font-size: calc(1.1rem * var(--font-scale));
+      padding: 6px 14px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .question-title {
+      font-size: calc(1.6rem * var(--font-scale));
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.35;
+      word-break: keep-all;
+    }
+
+    /* Visual Illustration Board */
+    .visual-board {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .visual-svg-wrap {
+      width: 100%;
+      max-width: 340px;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .visual-caption {
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Options Grid (2x2 on tablet/desktop, 1 col on small screens) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+    }
+
+    @media (max-width: 640px) {
+      .options-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .question-title {
+        font-size: calc(1.35rem * var(--font-scale));
+      }
+      .quiz-card {
+        padding: 18px 14px;
+      }
+    }
+
+    /* Option Button (Finger-friendly, Overflow-safe) */
+    .option-btn {
+      position: relative;
+      background: #ffffff;
+      border: 3px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(15, 23, 42, 0.04);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      text-align: left;
+      overflow: hidden; /* 절대 밖으로 삐져나가지 않음 */
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: #94a3b8;
+      background-color: #f8fafc;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .option-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    /* Option Left Group (Number + Content) */
+    .option-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-grow: 1;
+      min-width: 0; /* flex 자식 줄바꿈 지원 */
+    }
+
+    .option-num {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: calc(1.2rem * var(--font-scale));
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #cbd5e1;
+      transition: all 0.2s ease;
+    }
+
+    .option-text {
+      flex-grow: 1;
+      font-size: calc(1.35rem * var(--font-scale));
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Option Badge (선택/정답/내선택 뱃지 - 넘침 완전 방지) */
+    .option-badge {
+      flex-shrink: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 12px;
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 900;
+      border-radius: 999px;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* Selected State before reveal */
+    .option-btn.selected {
+      border-color: var(--primary-border);
+      background-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+    }
+
+    .option-btn.selected .option-num {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .option-btn.selected .option-text {
+      color: #1e3a8a;
+    }
+
+    .option-btn.selected .option-badge {
+      display: inline-flex;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
+    /* Reveal States */
+    .option-btn:disabled {
+      cursor: not-allowed;
+    }
+
+    /* Correct Answer */
+    .option-btn.is-correct {
+      border-color: var(--success-border) !important;
+      background-color: var(--success-light) !important;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35) !important;
+      animation: pulse-correct 0.5s ease;
+    }
+
+    .option-btn.is-correct .option-num {
+      background: var(--success) !important;
+      color: #ffffff !important;
+      border-color: var(--success) !important;
+    }
+
+    .option-btn.is-correct .option-text {
+      color: #14532d !important;
+    }
+
+    .option-btn.is-correct .option-badge {
+      display: inline-flex !important;
+      background: #dcfce7 !important;
+      color: #15803d !important;
+      border: 1.5px solid #86efac !important;
+    }
+
+    /* Wrong Answer (Chosen) */
+    .option-btn.is-wrong {
+      border-color: var(--danger-border) !important;
+      background-color: var(--danger-light) !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .option-btn.is-wrong .option-num {
+      background: var(--danger) !important;
+      color: #ffffff !important;
+      border-color: var(--danger) !important;
+    }
+
+    .option-btn.is-wrong .option-text {
+      color: #7f1d1d !important;
+    }
+
+    .option-btn.is-wrong .option-badge {
+      display: inline-flex !important;
+      background: #fee2e2 !important;
+      color: #b91c1c !important;
+      border: 1.5px solid #fca5a5 !important;
+    }
+
+    /* Dimmed */
+    .option-btn.is-dimmed {
+      opacity: 0.5;
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+
+    @keyframes pulse-correct {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    /* Warning Alert Banner */
+    .guide-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: var(--warning-light);
+      border: 2px solid #f59e0b;
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      color: #92400e;
+      font-size: calc(1.05rem * var(--font-scale));
+      font-weight: 800;
+      animation: shake 0.4s ease;
+    }
+
+    .guide-banner.show {
+      display: flex;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* Result Feedback Banner */
+    .result-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      font-size: calc(1.35rem * var(--font-scale));
+      font-weight: 900;
+      text-align: center;
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .result-banner.show {
+      display: flex;
+    }
+
+    .result-banner.correct {
+      background: #dcfce7;
+      border: 3px solid #22c55e;
+      color: #15803d;
+    }
+
+    .result-banner.wrong {
+      background: #fee2e2;
+      border: 3px solid #ef4444;
+      color: #b91c1c;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Action Buttons Area */
+    .actions-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .btn-main {
+      width: 100%;
+      min-height: 72px;
+      border-radius: var(--radius-md);
+      border: none;
+      font-size: calc(1.35rem * var(--font-scale));
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: var(--shadow-md);
+      transition: all 0.18s ease;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .btn-reveal {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      border: 2px solid #1e40af;
+    }
+
+    .btn-reveal:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: #ffffff;
+      border: 2px solid #065f46;
+      display: none;
+    }
+
+    .btn-next:hover {
+      background: linear-gradient(135deg, #047857, #065f46);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-main:active {
+      transform: scale(0.98);
+    }
+
+    /* Explanation Card */
+    .explanation-card {
+      display: none;
+      background: #f8fafc;
+      border: 3px solid #3b82f6;
+      border-radius: var(--radius-md);
+      padding: 22px;
+      animation: slideDown 0.4s ease;
+      gap: 14px;
+      flex-direction: column;
+    }
+
+    .explanation-card.show {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      0% { opacity: 0; transform: translateY(-12px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .explanation-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .explanation-tag {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+
+    .explanation-title {
+      font-size: calc(1.2rem * var(--font-scale));
+      font-weight: 900;
+      color: #1e3a8a;
+    }
+
+    .explanation-content {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+      font-size: calc(1.25rem * var(--font-scale));
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.6;
+    }
+
+    /* Final Result View (최종 결과 화면) */
+    .final-view {
+      display: none;
+      background: #ffffff;
+      border: 3px solid #cbd5e1;
+      border-radius: var(--radius-lg);
+      padding: 36px 24px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .final-view.show {
+      display: flex;
+      animation: popIn 0.4s ease;
+    }
+
+    .final-trophy {
+      font-size: 4.5rem;
+      line-height: 1;
+      animation: floatTrophy 2s ease-in-out infinite;
+    }
+
+    @keyframes floatTrophy {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .final-title {
+      font-size: calc(2rem * var(--font-scale));
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .final-score-box {
+      background: #eff6ff;
+      border: 3px solid #3b82f6;
+      border-radius: var(--radius-md);
+      padding: 20px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .final-score-val {
+      font-size: calc(2.8rem * var(--font-scale));
+      font-weight: 900;
+      color: #1d4ed8;
+    }
+
+    .final-desc {
+      font-size: calc(1.2rem * var(--font-scale));
+      font-weight: 800;
+      color: #334155;
+    }
+
+    /* Modal (문제 편집 창 - 태블릿 터치 & 스크롤 완벽 지원) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: #ffffff;
+      width: 100%;
+      max-width: 820px;
+      max-height: 90vh; /* 태블릿 화면에서 잘리지 않도록 제한 */
+      border-radius: var(--radius-lg);
+      border: 3px solid #94a3b8;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: calc(1.3rem * var(--font-scale));
+      font-weight: 900;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-notice {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 10px 16px;
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-alert {
+      display: none;
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      padding: 12px 16px;
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 800;
+      margin: 12px 20px 0;
+      border-radius: var(--radius-sm);
+      animation: shake 0.4s ease;
+    }
+
+    .modal-alert.show {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Modal Body (스크롤 가능 영역) */
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex-grow: 1;
+    }
+
+    .edit-q-card {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .edit-q-header {
+      font-size: calc(1.15rem * var(--font-scale));
+      font-weight: 900;
+      color: #1d4ed8;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: calc(0.95rem * var(--font-scale));
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: calc(1.05rem * var(--font-scale));
+      font-family: inherit;
+      color: #0f172a;
+      font-weight: 700;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .form-options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 580px) {
+      .form-options-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Modal Footer (태블릿 터치 친화적 하단 고정/스크롤 안전 영역) */
+    .modal-footer {
+      background: #f8fafc;
+      border-top: 2px solid #e2e8f0;
+      padding: 16px 20px;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      min-height: 56px;
+      padding: 0 24px;
+      border-radius: var(--radius-sm);
+      font-size: calc(1.1rem * var(--font-scale));
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      touch-action: manipulation;
+    }
+
+    .modal-btn-apply {
+      background: #16a34a;
+      color: #ffffff;
+      flex-grow: 1;
+    }
+
+    .modal-btn-apply:hover {
+      background: #15803d;
+    }
+
+    .modal-btn-cancel {
+      background: #e2e8f0;
+      color: #334155;
+      min-width: 110px;
+    }
+
+    .modal-btn-cancel:hover {
+      background: #cbd5e1;
+    }
+
+    .modal-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Step Pills */
+    .footer-step-guide {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .step-pill {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: calc(0.85rem * var(--font-scale));
+      font-weight: 800;
+    }
+
+    .step-pill.active {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: #64748b;
+      font-size: calc(0.85rem * var(--font-scale));
+      font-weight: 600;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="app-container">
+    
+    <!-- Top Classroom Header -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="brand-badge">🏫 우리 반 복습 퀴즈</span>
+      </div>
+      <div class="controls-group">
+        <button id="editQuizBtn" class="icon-btn icon-btn-edit" title="문제 편집">
+          <span>✏️</span>
+          <span>문제 편집</span>
+        </button>
+        <button id="soundToggleBtn" class="icon-btn" title="효과음 켜기/끄기">
+          <span id="soundIcon">🔊</span>
+          <span id="soundText">소리 켬</span>
+        </button>
+        <button id="textSizeToggleBtn" class="icon-btn" title="글자 크게 보기">
+          <span>🔠</span>
+          <span id="textSizeText">글자 크게</span>
+        </button>
+        <button id="fullscreenBtn" class="icon-btn" title="전체화면">
+          <span>⛶</span>
+          <span>전체화면</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Score & Problem Counter Dashboard -->
+    <section class="status-dashboard" id="statusDashboard">
+      <div class="progress-info">
+        <span class="progress-chip" id="progressChip">문제 1 / 3</span>
+        <span id="questionCategory">초등 수학 복습</span>
+      </div>
+      <div class="score-badge" id="scoreBadge">
+        <span>⭐ 현재 점수:</span>
+        <span id="scoreText">0점</span>
+      </div>
+    </section>
+
+    <!-- Progress Step Guide -->
+    <div class="footer-step-guide" id="stepGuide">
+      <span id="step1" class="step-pill active">1. 보기 선택</span>
+      <span>➔</span>
+      <span id="step2" class="step-pill">2. 정답 공개</span>
+      <span>➔</span>
+      <span id="step3" class="step-pill">3. 친절 해설</span>
+      <span>➔</span>
+      <span id="step4" class="step-pill">4. 다음 문제 / 최종 결과</span>
+    </div>
+
+    <!-- Main Quiz Card -->
+    <main class="quiz-card" id="quizCard" role="region" aria-label="퀴즈 영역">
+      
+      <!-- Question Prompt -->
+      <div class="question-header">
+        <div class="question-badge" id="questionNumBadge">1번</div>
+        <h1 class="question-title" id="questionTitle">삼각형의 변은 몇 개일까요?</h1>
+      </div>
+
+      <!-- Visual Classroom Board (도형·분수·길이 시각화) -->
+      <div id="visualBoard" class="visual-board">
+        <div class="visual-svg-wrap" id="visualSvgWrap">
+          <!-- Dynamically rendered visual -->
+        </div>
+        <p class="visual-caption">
+          <span>💡</span>
+          <span id="visualText">보기를 누른 뒤 아래 [정답 공개하기] 버튼을 누르세요.</span>
+        </p>
+      </div>
+
+      <!-- Warning Guidance Banner (선택하지 않고 공개 눌렀을 때 표시) -->
+      <div id="guideBanner" class="guide-banner" role="alert">
+        <span style="font-size: 1.5rem;">👉</span>
+        <span id="guideText">보기를 먼저 선택해 주세요! (원하는 보기를 터치하세요)</span>
+      </div>
+
+      <!-- Answer Outcome Banner (정답/오답 판정 배너) -->
+      <div id="resultBanner" class="result-banner" role="status">
+        <span id="resultIcon">🎉</span>
+        <span id="resultText">정답입니다! (+100점)</span>
+      </div>
+
+      <!-- Options Grid -->
+      <div class="options-grid" id="optionsGrid" role="radiogroup" aria-label="문제 보기 목록">
+        <!-- Dynamically populated options -->
+      </div>
+
+      <!-- Action Buttons Area -->
+      <div class="actions-area">
+        <button id="revealBtn" class="btn-main btn-reveal" type="button">
+          <span>✨</span>
+          <span>정답 공개하기</span>
+        </button>
+
+        <button id="nextBtn" class="btn-main btn-next" type="button">
+          <span id="nextBtnIcon">➡️</span>
+          <span id="nextBtnText">다음 문제로</span>
+        </button>
+      </div>
+
+      <!-- Explanation Card (정답 공개 후 슬라이드 다운) -->
+      <section id="explanationCard" class="explanation-card" aria-label="해설">
+        <div class="explanation-header">
+          <span class="explanation-tag">친절 해설</span>
+          <h2 class="explanation-title">알아두기</h2>
+        </div>
+        <div class="explanation-content" id="explanationText">
+          삼각형은 변이 3개인 다각형입니다.
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Final Score View (모든 문제를 푼 뒤 표시) -->
+    <section class="final-view" id="finalView" aria-label="최종 점수">
+      <div class="final-trophy">🏆</div>
+      <h2 class="final-title">우리 반 복습 퀴즈 완료!</h2>
+      <div class="final-score-box">
+        <span class="final-score-val" id="finalScoreVal">300점</span>
+        <span class="final-desc" id="finalSummaryText">총 3문제 중 3문제 정답!</span>
+      </div>
+      <p id="finalEncourageMsg" style="font-size: 1.25rem; font-weight: 800; color: #15803d;">
+        모든 문제를 훌륭하게 해결했어요! 참 잘했습니다! 🎉
+      </p>
+      <button id="restartBtn" class="btn-main btn-reveal" style="max-width: 420px;" type="button">
+        <span>🔄</span>
+        <span>처음부터 다시 시작하기</span>
+      </button>
+    </section>
+
+    <!-- Footer Bar -->
+    <footer class="footer-bar">
+      <span>💡 전자칠판 및 태블릿 터치 환경에 최적화되어 있습니다.</span>
+      <span>함께 배우는 즐거운 수학 시간</span>
+    </footer>
+
+  </div>
+
+  <!-- Modal: 문제 편집 창 -->
+  <div class="modal-overlay" id="editModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">
+          <span>✏️</span>
+          <span>문제 편집</span>
+        </h2>
+        <button id="modalCloseXBtn" class="icon-btn" style="padding: 4px 10px;" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-notice">
+        <span>ℹ️</span>
+        <span>새로고침하면 기본 문제로 돌아갑니다.</span>
+      </div>
+
+      <div class="modal-alert" id="modalAlert">
+        <span>⚠️</span>
+        <span id="modalAlertMsg">빈칸이 있거나 잘못된 정답 번호(1~4)가 있습니다. 확인해 주세요.</span>
+      </div>
+
+      <div class="modal-body" id="modalBody">
+        <!-- Rendered edit form for each question -->
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalCancelBtn" class="modal-btn modal-btn-cancel" type="button">취소</button>
+        <button id="modalApplyBtn" class="modal-btn modal-btn-apply" type="button">
+          <span>✓</span>
+          <span>적용하기</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ----------------------------------------------------
+      // Initial Questions Dataset
+      // ----------------------------------------------------
+      const DEFAULT_QUESTIONS = [
+        {
+          id: 1,
+          question: "삼각형의 변은 몇 개일까요?",
+          options: ["2개", "3개", "4개", "5개"],
+          correctIndex: 2, // 1-based index (3개)
+          explanation: "삼각형은 변이 3개인 다각형입니다.",
+          type: "triangle"
+        },
+        {
+          id: 2,
+          question: "1/2과 크기가 같은 분수는?",
+          options: ["1/3", "2/4", "2/3", "3/4"],
+          correctIndex: 2, // 1-based index (2/4)
+          explanation: "1/2의 분모와 분자에 각각 2를 곱하면 2/4가 되므로 두 분수의 크기는 같습니다. (전체를 2개로 나눈 것 중 1개와 4개로 나눈 것 중 2개는 같은 양입니다.)",
+          type: "fraction"
+        },
+        {
+          id: 3,
+          question: "1m는 몇 cm일까요?",
+          options: ["10", "50", "100", "1000"],
+          correctIndex: 3, // 1-based index (100)
+          explanation: "1m는 100cm와 같습니다. (1m = 100cm)",
+          type: "length"
+        }
+      ];
+
+      // Active Questions in memory
+      let questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+
+      // Quiz State
+      let currentIndex = 0;
+      let totalScore = 0;
+      let selectedOptionIndex = null; // 1-based
+      let isRevealed = false;
+      let soundEnabled = true;
+
+      // DOM Elements
+      const statusDashboard = document.getElementById('statusDashboard');
+      const progressChip = document.getElementById('progressChip');
+      const scoreBadge = document.getElementById('scoreBadge');
+      const scoreText = document.getElementById('scoreText');
+      const stepGuide = document.getElementById('stepGuide');
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const step4 = document.getElementById('step4');
+
+      const quizCard = document.getElementById('quizCard');
+      const questionNumBadge = document.getElementById('questionNumBadge');
+      const questionTitle = document.getElementById('questionTitle');
+      const visualBoard = document.getElementById('visualBoard');
+      const visualSvgWrap = document.getElementById('visualSvgWrap');
+      const visualText = document.getElementById('visualText');
+      const guideBanner = document.getElementById('guideBanner');
+      const resultBanner = document.getElementById('resultBanner');
+      const resultIcon = document.getElementById('resultIcon');
+      const resultText = document.getElementById('resultText');
+      const optionsGrid = document.getElementById('optionsGrid');
+      const revealBtn = document.getElementById('revealBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const nextBtnIcon = document.getElementById('nextBtnIcon');
+      const nextBtnText = document.getElementById('nextBtnText');
+      const explanationCard = document.getElementById('explanationCard');
+      const explanationText = document.getElementById('explanationText');
+
+      const finalView = document.getElementById('finalView');
+      const finalScoreVal = document.getElementById('finalScoreVal');
+      const finalSummaryText = document.getElementById('finalSummaryText');
+      const finalEncourageMsg = document.getElementById('finalEncourageMsg');
+      const restartBtn = document.getElementById('restartBtn');
+
+      const soundToggleBtn = document.getElementById('soundToggleBtn');
+      const soundIcon = document.getElementById('soundIcon');
+      const soundText = document.getElementById('soundText');
+      const textSizeToggleBtn = document.getElementById('textSizeToggleBtn');
+      const textSizeText = document.getElementById('textSizeText');
+      const fullscreenBtn = document.getElementById('fullscreenBtn');
+      const confettiCanvas = document.getElementById('confettiCanvas');
+
+      // Modal Elements
+      const editQuizBtn = document.getElementById('editQuizBtn');
+      const editModal = document.getElementById('editModal');
+      const modalCloseXBtn = document.getElementById('modalCloseXBtn');
+      const modalCancelBtn = document.getElementById('modalCancelBtn');
+      const modalApplyBtn = document.getElementById('modalApplyBtn');
+      const modalBody = document.getElementById('modalBody');
+      const modalAlert = document.getElementById('modalAlert');
+      const modalAlertMsg = document.getElementById('modalAlertMsg');
+
+      // ----------------------------------------------------
+      // Web Audio API Synthesizer (No external audio files)
+      // ----------------------------------------------------
+      let audioCtx = null;
+      function getAudioContext() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return audioCtx;
+      }
+
+      function playSound(type) {
+        if (!soundEnabled) return;
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+
+          if (type === 'select') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(660, now + 0.08);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'correct') {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, idx) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+              gain.gain.setValueAtTime(0, now + idx * 0.09);
+              gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.09 + 0.02);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.35);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + idx * 0.09);
+              osc.stop(now + idx * 0.09 + 0.35);
+            });
+          } else if (type === 'wrong') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(330, now);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.25);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+          } else if (type === 'warning') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(320, now);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          }
+        } catch (e) {}
+      }
+
+      // ----------------------------------------------------
+      // Confetti Canvas Animation
+      // ----------------------------------------------------
+      let confettiActive = false;
+      let confettiParticles = [];
+
+      function startConfetti() {
+        if (!confettiCanvas) return;
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+        const ctx = confettiCanvas.getContext('2d');
+        if (!ctx) return;
+
+        confettiParticles = [];
+        const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981'];
+
+        for (let i = 0; i < 90; i++) {
+          confettiParticles.push({
+            x: window.innerWidth / 2 + (Math.random() * 260 - 130),
+            y: window.innerHeight * 0.35,
+            vx: (Math.random() - 0.5) * 14,
+            vy: -Math.random() * 12 - 4,
+            size: Math.random() * 8 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 10,
+            alpha: 1
+          });
+        }
+
+        confettiActive = true;
+        let frames = 0;
+
+        function animate() {
+          if (!confettiActive) {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            return;
+          }
+          frames++;
+          ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+          let alive = false;
+          confettiParticles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.35;
+            p.rotation += p.vRot;
+            p.vx *= 0.98;
+
+            if (frames > 45) p.alpha -= 0.015;
+
+            if (p.alpha > 0 && p.y < window.innerHeight + 50) {
+              alive = true;
+              ctx.save();
+              ctx.translate(p.x, p.y);
+              ctx.rotate((p.rotation * Math.PI) / 180);
+              ctx.globalAlpha = Math.max(0, p.alpha);
+              ctx.fillStyle = p.color;
+              ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
+              ctx.restore();
+            }
+          });
+
+          if (alive && frames < 140) {
+            requestAnimationFrame(animate);
+          } else {
+            confettiActive = false;
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+
+      // ----------------------------------------------------
+      // Visual Renderer (SVG Illustrations for Problems)
+      // ----------------------------------------------------
+      function renderVisual(q, isRevealedState) {
+        if (!visualSvgWrap) return;
+
+        if (q.type === 'triangle') {
+          visualSvgWrap.innerHTML = `
+            <svg style="width:100%; height:100%;" viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="160,20 45,145 275,145" fill="#eff6ff" />
+              <line x1="160" y1="20" x2="45" y2="145" stroke="${isRevealedState ? '#16a34a' : '#3b82f6'}" stroke-width="${isRevealedState ? '7' : '5'}" stroke-linecap="round" />
+              <line x1="45" y1="145" x2="275" y2="145" stroke="${isRevealedState ? '#16a34a' : '#3b82f6'}" stroke-width="${isRevealedState ? '7' : '5'}" stroke-linecap="round" />
+              <line x1="275" y1="145" x2="160" y2="20" stroke="${isRevealedState ? '#16a34a' : '#3b82f6'}" stroke-width="${isRevealedState ? '7' : '5'}" stroke-linecap="round" />
+              <circle cx="160" cy="20" r="7" fill="#1d4ed8" />
+              <circle cx="45" cy="145" r="7" fill="#1d4ed8" />
+              <circle cx="275" cy="145" r="7" fill="#1d4ed8" />
+              ${!isRevealedState ? `
+                <!-- Before reveal: Question Mark in Center -->
+                <text x="160" y="105" font-size="28" font-weight="900" fill="#93c5fd" text-anchor="middle">?</text>
+              ` : `
+                <!-- After reveal: Highlight 3 Sides -->
+                <rect x="75" y="65" width="54" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" />
+                <text x="102" y="82" font-size="13" font-weight="800" fill="#15803d" text-anchor="middle">변 ①</text>
+                <rect x="133" y="148" width="54" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" />
+                <text x="160" y="165" font-size="13" font-weight="800" fill="#15803d" text-anchor="middle">변 ②</text>
+                <rect x="190" y="65" width="54" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" />
+                <text x="217" y="82" font-size="13" font-weight="800" fill="#15803d" text-anchor="middle">변 ③</text>
+              `}
+            </svg>
+          `;
+          visualText.textContent = isRevealedState 
+            ? '삼각형의 3개 변이 모두 확인되었습니다!' 
+            : '삼각형의 변이 모두 몇 개인지 생각해 보세요.';
+        } else if (q.type === 'fraction') {
+          if (!isRevealedState) {
+            // Before reveal: ONLY show 1/2 and a mystery box [ ? ] (Never show 2/4 or shaded answer!)
+            visualSvgWrap.innerHTML = `
+              <svg style="width:100%; height:100%;" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- Bar 1: 1/2 (기준 분수만 표시) -->
+                <text x="15" y="44" font-size="16" font-weight="900" fill="#1e293b">1/2</text>
+                <rect x="60" y="24" width="230" height="32" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2" />
+                <rect x="60" y="24" width="115" height="32" rx="6" fill="#3b82f6" />
+                <line x1="175" y1="24" x2="175" y2="56" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,3" />
+
+                <!-- Comparison Question Mystery Bar -->
+                <text x="15" y="116" font-size="20" font-weight="900" fill="#2563eb">?</text>
+                <rect x="60" y="94" width="230" height="34" rx="8" fill="#f8fafc" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,4" />
+                <text x="175" y="117" font-size="15" font-weight="800" fill="#2563eb" text-anchor="middle">1/2과 크기가 같은 분수는? [ ? ]</text>
+              </svg>
+            `;
+            visualText.textContent = '1/2의 크기를 보고, 크기가 같은 분수를 골라보세요.';
+          } else {
+            // After reveal: Show 2/4 and exact matching visual
+            visualSvgWrap.innerHTML = `
+              <svg style="width:100%; height:100%;" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- Bar 1: 1/2 -->
+                <text x="15" y="44" font-size="16" font-weight="800" fill="#1e293b">1/2</text>
+                <rect x="60" y="24" width="230" height="32" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2" />
+                <rect x="60" y="24" width="115" height="32" rx="6" fill="#3b82f6" />
+                <line x1="175" y1="24" x2="175" y2="56" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,3" />
+
+                <!-- Bar 2: 2/4 (정답 공개) -->
+                <text x="15" y="116" font-size="16" font-weight="900" fill="#15803d">2/4</text>
+                <rect x="60" y="94" width="230" height="32" rx="6" fill="#f1f5f9" stroke="#16a34a" stroke-width="2" />
+                <rect x="60" y="94" width="115" height="32" rx="6" fill="#16a34a" />
+                <line x1="117.5" y1="94" x2="117.5" y2="126" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,3" />
+                <line x1="175" y1="94" x2="175" y2="126" stroke="#ffffff" stroke-width="2" />
+                <line x1="232.5" y1="94" x2="232.5" y2="126" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,3" />
+
+                <!-- Comparison Line -->
+                <line x1="175" y1="14" x2="175" y2="136" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4" />
+              </svg>
+            `;
+            visualText.textContent = '정답 확인: 1/2 크기와 2/4 크기가 정확히 일치합니다!';
+          }
+        } else if (q.type === 'length') {
+          if (!isRevealedState) {
+            // Before reveal: ONLY show 1m and [ ? ] cm (Never show 100 cm!)
+            visualSvgWrap.innerHTML = `
+              <svg style="width:100%; height:100%;" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- Ruler 1m -->
+                <rect x="20" y="28" width="280" height="42" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2.5" />
+                <text x="160" y="56" font-size="18" font-weight="900" fill="#92400e" text-anchor="middle">1 m (미터)</text>
+                
+                <!-- Ticks -->
+                <line x1="20" y1="60" x2="20" y2="70" stroke="#d97706" stroke-width="3" />
+                <line x1="90" y1="60" x2="90" y2="70" stroke="#d97706" stroke-width="2" />
+                <line x1="160" y1="60" x2="160" y2="70" stroke="#d97706" stroke-width="3" />
+                <line x1="230" y1="60" x2="230" y2="70" stroke="#d97706" stroke-width="2" />
+                <line x1="300" y1="60" x2="300" y2="70" stroke="#d97706" stroke-width="3" />
+
+                <!-- Equal Sign & Mystery Question Box [ ? ] cm -->
+                <text x="160" y="103" font-size="22" font-weight="900" fill="#2563eb" text-anchor="middle">=</text>
+                <rect x="80" y="112" width="160" height="38" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,4" />
+                <text x="160" y="137" font-size="18" font-weight="900" fill="#2563eb" text-anchor="middle">[  ?  ] cm</text>
+              </svg>
+            `;
+            visualText.textContent = '1m는 몇 cm와 같을까요? 알맞은 보기를 골라보세요.';
+          } else {
+            // After reveal: Reveal 100 cm!
+            visualSvgWrap.innerHTML = `
+              <svg style="width:100%; height:100%;" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- Ruler 1m -->
+                <rect x="20" y="28" width="280" height="42" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2.5" />
+                <text x="160" y="56" font-size="18" font-weight="900" fill="#92400e" text-anchor="middle">1 m (미터)</text>
+                
+                <!-- Ticks -->
+                <line x1="20" y1="60" x2="20" y2="70" stroke="#d97706" stroke-width="3" />
+                <line x1="90" y1="60" x2="90" y2="70" stroke="#d97706" stroke-width="2" />
+                <line x1="160" y1="60" x2="160" y2="70" stroke="#d97706" stroke-width="3" />
+                <line x1="230" y1="60" x2="230" y2="70" stroke="#d97706" stroke-width="2" />
+                <line x1="300" y1="60" x2="300" y2="70" stroke="#d97706" stroke-width="3" />
+
+                <!-- Equal Sign & Revealed 100 cm Box -->
+                <text x="160" y="103" font-size="22" font-weight="900" fill="#16a34a" text-anchor="middle">=</text>
+                <rect x="80" y="112" width="160" height="38" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2" />
+                <text x="160" y="137" font-size="18" font-weight="900" fill="#15803d" text-anchor="middle">100 cm (정답!)</text>
+              </svg>
+            `;
+            visualText.textContent = '정답 확인: 1m는 100cm입니다! (1m = 100cm)';
+          }
+        } else {
+          // Custom / Generic question visual
+          visualSvgWrap.innerHTML = `
+            <div style="font-size: 3.2rem; display: flex; align-items: center; justify-content: center; height: 100%;">
+              ${isRevealedState ? '🎯' : '🤔'}
+            </div>
+          `;
+          visualText.textContent = isRevealedState 
+            ? '정답과 해설을 확인하세요!' 
+            : '보기를 누른 뒤 아래 [정답 공개하기] 버튼을 누르세요.';
+        }
+      }
+
+      // ----------------------------------------------------
+      // Render Current Question
+      // ----------------------------------------------------
+      function loadQuestion(index) {
+        const q = questions[index];
+        if (!q) return;
+
+        // Reset state for this question
+        selectedOptionIndex = null;
+        isRevealed = false;
+
+        // UI Header Updates
+        progressChip.textContent = `문제 ${index + 1} / ${questions.length}`;
+        questionNumBadge.textContent = `${index + 1}번`;
+        questionTitle.textContent = q.question;
+        explanationText.textContent = q.explanation;
+
+        // Reset Banners & Cards
+        guideBanner.classList.remove('show');
+        resultBanner.className = 'result-banner';
+        explanationCard.classList.remove('show');
+
+        // Reset Visual
+        renderVisual(q, false);
+
+        // Render Options Grid (With safe flex layout & overflow-safe badges)
+        optionsGrid.innerHTML = '';
+        q.options.forEach((optText, i) => {
+          const optNumber = i + 1;
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.type = 'button';
+          btn.dataset.index = optNumber;
+          btn.setAttribute('role', 'radio');
+          btn.setAttribute('aria-checked', 'false');
+          btn.setAttribute('aria-label', `${optNumber}번 보기 ${optText}`);
+
+          btn.innerHTML = `
+            <div class="option-left">
+              <span class="option-num">${optNumber}</span>
+              <span class="option-text"></span>
+            </div>
+            <span class="option-badge">선택</span>
+          `;
+
+          // Using textContent to safely render text (including single/double quotes)
+          btn.querySelector('.option-text').textContent = optText;
+
+          btn.addEventListener('click', () => handleOptionSelect(optNumber, btn));
+          optionsGrid.appendChild(btn);
+        });
+
+        // Swap Action Buttons
+        revealBtn.style.display = 'flex';
+        nextBtn.style.display = 'none';
+
+        // Update Steps
+        step1.classList.add('active');
+        step2.classList.remove('active');
+        step3.classList.remove('active');
+        step4.classList.remove('active');
+
+        // Ensure main quiz is visible & final view is hidden
+        quizCard.style.display = 'flex';
+        statusDashboard.style.display = 'flex';
+        stepGuide.style.display = 'flex';
+        finalView.classList.remove('show');
+
+        // Smooth scroll to question top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ----------------------------------------------------
+      // Option Selection Logic
+      // ----------------------------------------------------
+      function handleOptionSelect(optIndex, btnElement) {
+        if (isRevealed) return; // Locked once revealed
+
+        selectedOptionIndex = optIndex;
+        guideBanner.classList.remove('show');
+        playSound('select');
+
+        const allButtons = optionsGrid.querySelectorAll('.option-btn');
+        allButtons.forEach(b => {
+          const isSelected = (parseInt(b.dataset.index, 10) === optIndex);
+          b.classList.toggle('selected', isSelected);
+          b.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+          const badge = b.querySelector('.option-badge');
+          if (badge) {
+            badge.textContent = isSelected ? '선택됨' : '';
+          }
+        });
+
+        visualText.textContent = `선택한 답: [ ${optIndex}번 ${questions[currentIndex].options[optIndex - 1]} ] — [정답 공개하기]를 누르세요.`;
+      }
+
+      // ----------------------------------------------------
+      // Reveal Answer Logic
+      // ----------------------------------------------------
+      revealBtn.addEventListener('click', () => {
+        if (isRevealed) return;
+
+        // 1. Validation: Must select an option
+        if (selectedOptionIndex === null) {
+          guideBanner.classList.remove('show');
+          void guideBanner.offsetWidth; // Trigger reflow for shake
+          guideBanner.classList.add('show');
+          playSound('warning');
+          guideBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          return;
+        }
+
+        // 2. Lock Options immediately (공개 누른 순간부터 보기를 바꾸지 못함)
+        isRevealed = true;
+        const allButtons = optionsGrid.querySelectorAll('.option-btn');
+        allButtons.forEach(b => {
+          b.disabled = true;
+        });
+
+        const q = questions[currentIndex];
+        const isCorrect = (selectedOptionIndex === q.correctIndex);
+
+        // 3. Score update: 정답은 한 번만 100점, 오답은 0점
+        if (isCorrect) {
+          totalScore += 100;
+          scoreText.textContent = `${totalScore}점`;
+          scoreBadge.classList.add('glow');
+          setTimeout(() => scoreBadge.classList.remove('glow'), 500);
+        }
+
+        // 4. Update Option Buttons Appearance
+        allButtons.forEach(b => {
+          const idx = parseInt(b.dataset.index, 10);
+          const badge = b.querySelector('.option-badge');
+
+          if (idx === q.correctIndex) {
+            b.classList.add('is-correct');
+            if (badge) badge.textContent = '🎉 정답!';
+          } else if (idx === selectedOptionIndex) {
+            b.classList.add('is-wrong');
+            if (badge) badge.textContent = '✕ 내 선택';
+          } else {
+            b.classList.add('is-dimmed');
+            if (badge) badge.textContent = '';
+          }
+        });
+
+        // 5. Update Visual
+        renderVisual(q, true);
+
+        // 6. Outcome Feedback & Sound
+        if (isCorrect) {
+          resultBanner.className = 'result-banner correct show';
+          resultIcon.textContent = '🎉';
+          resultText.textContent = '정답입니다! (+100점)';
+          playSound('correct');
+          startConfetti();
+        } else {
+          resultBanner.className = 'result-banner wrong show';
+          resultIcon.textContent = '💡';
+          resultText.textContent = `아쉬워요! 정답은 ${q.correctIndex}번입니다. (+0점)`;
+          playSound('wrong');
+        }
+
+        // 7. Show Explanation
+        explanationCard.classList.add('show');
+
+        // 8. Next Step Buttons
+        step1.classList.remove('active');
+        step2.classList.add('active');
+        step3.classList.add('active');
+        step4.classList.add('active');
+
+        revealBtn.style.display = 'none';
+        nextBtn.style.display = 'flex';
+
+        // Check if there is a next question or final score
+        const isLastQuestion = (currentIndex === questions.length - 1);
+        if (isLastQuestion) {
+          nextBtnIcon.textContent = '🏆';
+          nextBtnText.textContent = '최종 점수 확인하기';
+        } else {
+          nextBtnIcon.textContent = '➡️';
+          nextBtnText.textContent = `다음 문제로 (${currentIndex + 2}/${questions.length})`;
+        }
+
+        // Scroll explanation into view if needed
+        setTimeout(() => {
+          explanationCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 120);
+      });
+
+      // ----------------------------------------------------
+      // Next Question / Show Final Result
+      // ----------------------------------------------------
+      nextBtn.addEventListener('click', () => {
+        if (currentIndex < questions.length - 1) {
+          // Go to next question
+          currentIndex++;
+          loadQuestion(currentIndex);
+        } else {
+          // Show Final Result View
+          showFinalScore();
+        }
+      });
+
+      function showFinalScore() {
+        quizCard.style.display = 'none';
+        statusDashboard.style.display = 'none';
+        stepGuide.style.display = 'none';
+
+        const maxScore = questions.length * 100;
+        finalScoreVal.textContent = `${totalScore}점 / ${maxScore}점`;
+        const correctCount = Math.round(totalScore / 100);
+        finalSummaryText.textContent = `총 ${questions.length}문제 중 ${correctCount}문제 정답!`;
+
+        if (totalScore === maxScore) {
+          finalEncourageMsg.textContent = '와우! 만점입니다! 우리 반 수학 박사네요! 🥇';
+          startConfetti();
+        } else if (totalScore >= maxScore * 0.6) {
+          finalEncourageMsg.textContent = '훌륭해요! 조금만 더 복습하면 백점 만점이에요! 👏';
+        } else {
+          finalEncourageMsg.textContent = '끝까지 열심히 풀었어요! 다시 도전해 볼까요? 💪';
+        }
+
+        finalView.classList.add('show');
+        playSound('correct');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ----------------------------------------------------
+      // Restart Quiz (다시 시작하면 문제 1번 · 0점이 됨)
+      // ----------------------------------------------------
+      restartBtn.addEventListener('click', () => {
+        currentIndex = 0;
+        totalScore = 0;
+        scoreText.textContent = '0점';
+        finalView.classList.remove('show');
+        loadQuestion(0);
+      });
+
+      // ----------------------------------------------------
+      // Modal: Problem Editor (문제 편집 기능)
+      // ----------------------------------------------------
+      function openEditModal() {
+        modalAlert.classList.remove('show');
+        modalBody.innerHTML = '';
+
+        // Render editor card for each question
+        questions.forEach((q, idx) => {
+          const card = document.createElement('div');
+          card.className = 'edit-q-card';
+          card.dataset.index = idx;
+
+          card.innerHTML = `
+            <div class="edit-q-header">문제 ${idx + 1}</div>
+            
+            <div class="form-group">
+              <label class="form-label">질문</label>
+              <textarea class="form-textarea q-question-input" rows="2" placeholder="질문을 입력하세요"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">보기 4개 (1번 ~ 4번)</label>
+              <div class="form-options-grid">
+                <input type="text" class="form-input q-opt-input" data-opt="0" placeholder="1번 보기" />
+                <input type="text" class="form-input q-opt-input" data-opt="1" placeholder="2번 보기" />
+                <input type="text" class="form-input q-opt-input" data-opt="2" placeholder="3번 보기" />
+                <input type="text" class="form-input q-opt-input" data-opt="3" placeholder="4번 보기" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">정답 번호 (1 ~ 4)</label>
+              <select class="form-select q-correct-input">
+                <option value="1">1번</option>
+                <option value="2">2번</option>
+                <option value="3">3번</option>
+                <option value="4">4번</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">해설</label>
+              <textarea class="form-textarea q-expl-input" rows="2" placeholder="정답 해설을 입력하세요"></textarea>
+            </div>
+          `;
+
+          // Fill inputs using safe value assignment to properly handle quotes
+          card.querySelector('.q-question-input').value = q.question;
+          const optInputs = card.querySelectorAll('.q-opt-input');
+          q.options.forEach((optText, optIdx) => {
+            if (optInputs[optIdx]) optInputs[optIdx].value = optText;
+          });
+          card.querySelector('.q-correct-input').value = String(q.correctIndex);
+          card.querySelector('.q-expl-input').value = q.explanation;
+
+          modalBody.appendChild(card);
+        });
+
+        editModal.classList.add('show');
+        // Scroll modal body to top
+        modalBody.scrollTop = 0;
+      }
+
+      function closeEditModal() {
+        editModal.classList.remove('show');
+      }
+
+      editQuizBtn.addEventListener('click', openEditModal);
+      modalCloseXBtn.addEventListener('click', closeEditModal);
+      modalCancelBtn.addEventListener('click', closeEditModal);
+
+      // Close modal when clicking outside dialog
+      editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
+
+      // Apply Edits: Validation & Memory Update
+      modalApplyBtn.addEventListener('click', () => {
+        const cards = modalBody.querySelectorAll('.edit-q-card');
+        const newQuestions = [];
+
+        for (let i = 0; i < cards.length; i++) {
+          const card = cards[i];
+          const questionText = card.querySelector('.q-question-input').value.trim();
+          const optInputs = card.querySelectorAll('.q-opt-input');
+          const correctVal = parseInt(card.querySelector('.q-correct-input').value, 10);
+          const explanationText = card.querySelector('.q-expl-input').value.trim();
+
+          // 1. Validate Question text
+          if (!questionText) {
+            showModalError(`문제 ${i + 1}의 질문을 입력해 주세요.`);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+
+          // 2. Validate 4 Options
+          const optionsArr = [];
+          for (let j = 0; j < optInputs.length; j++) {
+            const val = optInputs[j].value.trim();
+            if (!val) {
+              showModalError(`문제 ${i + 1}의 ${j + 1}번 보기를 입력해 주세요.`);
+              optInputs[j].focus();
+              return;
+            }
+            optionsArr.push(val);
+          }
+
+          // 3. Validate Correct Index (1 ~ 4)
+          if (isNaN(correctVal) || correctVal < 1 || correctVal > 4) {
+            showModalError(`문제 ${i + 1}의 정답 번호는 1, 2, 3, 4 중 하나여야 합니다.`);
+            return;
+          }
+
+          // 4. Validate Explanation
+          if (!explanationText) {
+            showModalError(`문제 ${i + 1}의 해설을 입력해 주세요.`);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+
+          newQuestions.push({
+            id: i + 1,
+            question: questionText,
+            options: optionsArr,
+            correctIndex: correctVal,
+            explanation: explanationText,
+            type: questions[i] ? questions[i].type : 'custom'
+          });
+        }
+
+        // Successful validation!
+        questions = newQuestions;
+        closeEditModal();
+
+        // "적용하면 새 내용으로 0점부터 시작"
+        currentIndex = 0;
+        totalScore = 0;
+        scoreText.textContent = '0점';
+        loadQuestion(0);
+        playSound('correct');
+      });
+
+      function showModalError(msg) {
+        modalAlertMsg.textContent = msg;
+        modalAlert.classList.remove('show');
+        void modalAlert.offsetWidth;
+        modalAlert.classList.add('show');
+        modalAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        playSound('warning');
+      }
+
+      // ----------------------------------------------------
+      // Top Controls: Sound, Font Scale, Fullscreen
+      // ----------------------------------------------------
+      soundToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) {
+          soundIcon.textContent = '🔊';
+          soundText.textContent = '소리 켬';
+          playSound('select');
+        } else {
+          soundIcon.textContent = '🔇';
+          soundText.textContent = '소리 끔';
+        }
+      });
+
+      textSizeToggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('large-text');
+        const isLarge = document.body.classList.contains('large-text');
+        textSizeText.textContent = isLarge ? '글자 보통' : '글자 크게';
+      });
+
+      fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      });
+
+      // Window resize confetti handler
+      window.addEventListener('resize', () => {
+        if (confettiCanvas) {
+          confettiCanvas.width = window.innerWidth;
+          confettiCanvas.height = window.innerHeight;
+        }
+      });
+
+      // Initial Load
+      loadQuestion(0);
+
+    })();
+  </script>
+</body>
+</html>
